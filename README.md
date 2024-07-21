@@ -97,3 +97,49 @@ My thoughts:
 
       The good thing is that Rust does all the checks at compile time, therefore it does not affect code efficiency. 
       Borrowing rules are hard to follow but they prevent data races, memory leaks and a bunch of errors that you have to deal with in C.
+
+
+### 2. Structs ~~OOP~~
+   _Structs are pretty similar to C but `impl` feature makes them more flexible_
+
+   `Impl`(implementation block) is a collection of functions similar to public member functions from C++ OOP world
+   ```rust
+   struct Rectangle {
+      width: u64,
+      height: u64
+   }
+
+   impl Rectangle {
+      fn area(&self) -> u64 {       // first argument is always self which is the instance the method is called on
+         self.width * self.height;  // it is also possible to take the ownership of an instance
+      }                             // but in this case we only need a reference
+
+      fn can_hold(&self, other: &Rectangle) -> bool {
+         self.height > other.height && self.width > other.width;
+      }
+   }
+   ```
+
+   <ins>Associated functions</ins> - are defined in `impl` blocks and do not take a self parameter. They are similar to static member functions in C++ because they can be called on the type itself rather than on an instance of the type.
+   ```rust
+   struct Rectangle {
+      width: u64,
+      height: u64
+   }
+
+   impl Rectangle {
+      fn square(number: i32) -> i32 {      // associated function (does not take self parametr)
+         number * number
+      }
+
+      fn area(&self) -> u64 {
+         self.width * self.height;       // method (takes self parametr)
+      }
+   }
+
+   fn main() {
+      let r: Rectangle = Rectangle { width: 40, height: 50 }; // creating struct variable
+      Rectangle::square(2);             // calling associated function
+      r.area()                          // calling method
+   }
+   ```
