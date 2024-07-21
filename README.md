@@ -143,3 +143,30 @@ My thoughts:
       r.area()                          // calling method
    }
    ```
+### 3. Match ~~Switch~~ and Enum
+_Match statements must cover all possible values. This ensures that every possible case is handled_
+
+Match works especially good with enums
+```rust
+enum Message {
+    Quit,
+    Move { x: i32, y: i32 },      // enums in Rust can have options
+    Write(String),
+    ChangeColor(i32, i32, i32),
+}
+
+fn process_message(msg: &Message) {
+    match msg {                  // match statement
+        Message::Quit => println!("Quit message received"),
+        Message::Move { x, y } => println!("Move to ({}, {})", x, y),
+        Message::Write(text) => println!("Text message: {}", text),
+        _ => println!("Message is not supported")                      // _ means anything else
+    }
+}
+
+fn main() {
+   let write_message = Message::Write(String::from("Hello, Rust!"));  // use enum with options
+
+   process_message(&write_message);                                   // pass a reference to avoid passing an ownership
+}
+```
