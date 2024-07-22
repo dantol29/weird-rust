@@ -170,3 +170,33 @@ fn main() {
    process_message(&write_message);                                   // pass a reference to avoid passing an ownership
 }
 ```
+
+
+### 4. Collections ~~Containers~~
+1. `Vec` - similar to `std::vector`
+   ```rust
+   let mut r: Vec<i32> = Vec::new(); // creating a heap-allocated array of integers
+
+   r.push(1);                       // adding elements to the array
+
+   match r.get(2) {                 // safe out-of-bounds access with get() and match
+      Some(val) => println!("Print what you want {}", val),
+      None => println!("Index is out of bounds!")
+   }
+   
+   ```
+   The only thing that feels strange is the way you iterate...
+   ```rust
+   for x: &i32 in &r {               // iterating over an immutable vector(do not forget to borrow)
+      println("Element is {}", x);   // println! automatically dereferences a variable
+   }
+
+   for x: &mut i32 in &mut r {       // iterating over a mutable vector
+      *x += 20;                      // DEREFERENCE to modify an element 
+   }
+
+   ```
+
+   <ins>Explanation</ins>:
+
+   In C, when working with arrays you have to dereference it's elements. Usually it is automatically dereferenced by compiler when `[]` is used. `arr[i]` is equivalent to `*(arr + i)`. Rust compiler also does it. Although, when iterating over an array(`for i in &arr`) the memory adress of the element is returned, therefore to access the value of the address `*` operator is needed. Note that `println!` macro automatically dereferences variables.
