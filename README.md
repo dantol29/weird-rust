@@ -200,3 +200,30 @@ fn main() {
    <ins>Explanation</ins>:
 
    In C, when working with arrays you have to dereference it's elements. Usually it is automatically dereferenced by compiler when `[]` is used. `arr[i]` is equivalent to `*(arr + i)`. Rust compiler also does it. Although, when iterating over an array(`for i in &arr`) the memory adress of the element is returned, therefore to access the value of the address `*` operator is needed. Note that `println!` macro automatically dereferences variables.
+
+
+## ICP Specific Rust
+- `thread_local!` - creates a thread-local variable, and the data associated with this variable is unique to each thread. Used when static variables needed.
+```rust
+thread_local! {
+    static ACTIVE_USERS: RefCell<UserMap> = RefCell::new(UserMap::new());
+}
+```
+- `RefCell<T>` - allows to mutate a value even if the variable itself is immutable. In ICP canister development, many functions are async. These functions might need to modify shared state or perform operations that are not possible under strict compile-time borrowing rules.
+```txt
+Key Methods
+
+borrow - acquires an immutable borrow. Returns a Ref<T>, which provides access to the inner data.
+
+borrow_mut - acquires a mutable borrow. Returns a RefMut<T>, which provides mutable access to the inner data.
+
+replace - replaces the inner value and returns the old value.
+```
+- `static` variables - global variables that the protocol preserves across upgrades. For example, a user database should probably be static.
+```rust
+static USERS: RefCell<Users> = RefCall::new(Users::new();
+```
+- `.with()` - used to access and modify the thread-local data. Ensures that the closure you provide has access to the thread-local data for the duration of the closure’s executio
+```rust
+COUNTER.with(|counter| *counter.borrow_mut() += 1);
+```
