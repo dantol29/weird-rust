@@ -1,6 +1,9 @@
 use candid::{self, CandidType, Deserialize, Principal};
 use ic_cdk::{self, api::call::CallResult};
 
+const CANISTER_ID: Principal =    // EVM RPC canister id - defined in dfx.json to use with local replica
+    Principal::from_slice(b"\x00\x00\x00\x00\x02\x30\x00\xCC\x01\x01"); // 7hfb6-caaaa-aaaar-qadga-cai
+
 #[derive(CandidType, Deserialize)]
 struct Block {                // struct returned by eth_getBlockByNumber call
     pub miner: String,
