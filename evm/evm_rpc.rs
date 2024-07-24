@@ -1,11 +1,13 @@
+#![allow(non_snake_case)]
+
 use candid::{self, CandidType, Deserialize, Principal};
 use ic_cdk::{self, api::call::CallResult};
 
-const CANISTER_ID: Principal =    // EVM RPC canister id - defined in dfx.json to use with local replica
+pub const CANISTER_ID: Principal =    // EVM RPC canister id - defined in dfx.json to use with local replica
     Principal::from_slice(b"\x00\x00\x00\x00\x02\x30\x00\xCC\x01\x01"); // 7hfb6-caaaa-aaaar-qadga-cai
 
 #[derive(CandidType, Deserialize)]
-struct Block {                // struct returned by eth_getBlockByNumber call
+pub struct Block {                // struct returned by eth_getBlockByNumber call
     pub miner: String,
     pub totalDifficulty: u128,
     pub receiptsRoot: String,
@@ -30,7 +32,7 @@ struct Block {                // struct returned by eth_getBlockByNumber call
 }
 
 #[derive(CandidType, Deserialize)]
-enum BlockTag {   // specify a particular block in an Ethereum
+pub enum BlockTag {   // specify a particular block in an Ethereum
     Earliest,     // Earliest: This refers to the earliest block (genesis block) in the blockchain.
     Safe,         // Safe: This refers to the latest block that is considered safe from reorganizations.
     Finalized,    // Finalized: This refers to the latest block that has been finalized and cannot be reorganized.
@@ -52,7 +54,7 @@ pub enum MultiGetBlockByNumberResult {                       // is used to handl
 }
 
 #[derive(CandidType, Deserialize)]
-enum EthMainnetService { // all avaliable mainnet services
+pub enum EthMainnetService { // all avaliable mainnet services
     Alchemy,
     BlockPi,
     Cloudflare,
@@ -61,7 +63,7 @@ enum EthMainnetService { // all avaliable mainnet services
 }
 
 #[derive(CandidType, Deserialize)]
-enum EthSepoliaService { // all avaliable testnet services
+pub enum EthSepoliaService { // all avaliable testnet services
     Alchemy,
     BlockPi,
     PublicNode,
@@ -69,14 +71,14 @@ enum EthSepoliaService { // all avaliable testnet services
 }
 
 #[derive(CandidType, Deserialize)]
-enum RpcServices {
+pub enum RpcServices {
     EthSepolia(Option<Vec<EthSepoliaService>>), // ETH testnet
     EthMainnet(Option<Vec<EthMainnetService>>), // ETH mainnet
 }
 
-struct EvmRpcCanister;
+pub struct EvmRpcCanister;
 impl EvmRpcCanister {
-    async fn eth_get_block_by_number(
+    pub async fn eth_get_block_by_number(
         services: RpcServices,
         config: Option<RpcConfig>,
         block_tag: BlockTag,
@@ -92,58 +94,113 @@ impl EvmRpcCanister {
     }
 }
 
-#[ic_cdk::update]
-async fn get_latest_eth_block() -> Block {
-  let rpc_provider = RpcServices::EthMainnet(Some(vec![EthMainnetService::Cloudflare])); // choose ETH mainnet->cloudfare
-
-  let cycles: u128 = 10_000_000_000;
-
-  let (result,) =                               // expects a tuple. will save only the left side of the tuple.
-        EvmRpcCanister::eth_get_block_by_number(rpc_providers, None, BlockTag::Latest, cycles) // calls a static function of struct EvmRpcCanister
-            .await
-            .expect("Call failed"); // If the function call results in an error, the program will panic and output the message "Call failed"
-  
-  match result {
-        MultiGetBlockByNumberResult::Consistent(r) => match r {    // if the results from all queried services are consistent
-            GetBlockByNumberResult::Ok(block) => block,            // return block info
-            GetBlockByNumberResult::Err(err) => panic!("{err:?}"), // return an error
-        },
-        MultiGetBlockByNumberResult::Inconsistent(_) => {          // if the results from all queried services are inconsistent
-            panic!("RPC providers gave inconsistent results")      // return an error
-        }
-    }
+#[derive(CandidType, Deserialize)]
+pub enum Auth {
+    RegisterProvider,
+    FreeRpc,
+    PriorityRpc,
+    Manage,
 }
 
+#[derive(CandidType, Deserialize)]
+pub struct HttpHeader {
+    pub value: String,
+    pub name: String,
+}
 
+#[derive(CandidType, Deserialize)]
+pub struct RpcApi {
+    pub url: String,
+    pub headers: Option<Vec<HttpHeader>>,
+}
 
+#[derive(CandidType, Deserialize)]
+pub struct RpcConfig {
+    pub responseSizeEstimate: Option<u64>,
+}
 
-candid file:
-  
-type Block = record {
-  baseFeePerGas : nat;
-  difficulty : nat;
-  extraData : text;
-  gasLimit : nat;
-  gasUsed : nat;
-  hash : text;
-  logsBloom : text;
-  miner : text;
-  mixHash : text;
-  nonce : nat;
-  number : nat;
-  parentHash : text;
-  receiptsRoot : text;
-  sha3Uncles : text;
-  size : nat;
-  stateRoot : text;
-  timestamp : nat;
-  totalDifficulty : nat;
-  transactions : vec text;
-  transactionsRoot : opt text;
-  uncles : vec text;
-};
+#[derive(CandidType, Deserialize)]
+pub struct FeeHistoryArgs {
+    pub blockCount: u128,
+    pub newestBlock: BlockTag,
+    pub rewardPercentiles: Option<serde_bytes::ByteBuf>,
+}
 
-service : {
-  /// Retrieve the latest block on the Ethereum blockchain.
-  get_latest_ethereum_block : () -> (Block);
-};
+#[derive(CandidType, Deserialize)]
+pub struct FeeHistory {
+    pub reward: Vec<Vec<u128>>,
+    pub gasUsedRatio: Vec<f64>,
+    pub oldestBlock: u128,
+    pub baseFeePerGas: Vec<u128>,
+}
+
+#[derive(CandidType, Deserialize, Debug)]
+pub struct JsonRpcError {
+    pub code: i64,
+    pub message: String,
+}
+
+#[derive(CandidType, Deserialize, Debug)]
+pub enum ProviderError {
+    TooFewCycles { expected: u128, received: u128 },
+    MissingRequiredProvider,
+    ProviderNotFound,
+    NoPermission,
+}
+
+#[derive(CandidType, Deserialize, Debug)]
+pub enum ValidationError {
+    CredentialPathNotAllowed,
+    HostNotAllowed(String),
+    CredentialHeaderNotAllowed,
+    UrlParseError(String),
+    Custom(String),
+    InvalidHex(String),
+}
+
+#[derive(CandidType, Deserialize, Debug)]
+pub enum RejectionCode {
+    NoError,
+    CanisterError,
+    SysTransient,
+    DestinationInvalid,
+    Unknown,
+    SysFatal,
+    CanisterReject,
+}
+
+#[derive(CandidType, Deserialize, Debug)]
+pub enum HttpOutcallError {
+    IcError {
+        code: RejectionCode,
+        message: String,
+    },
+    InvalidHttpJsonRpcResponse {
+        status: u16,
+        body: String,
+        parsingError: Option<String>,
+    },
+}
+
+#[derive(CandidType, Deserialize, Debug)]
+pub enum RpcError {
+    JsonRpcError(JsonRpcError),
+    ProviderError(ProviderError),
+    ValidationError(ValidationError),
+    HttpOutcallError(HttpOutcallError),
+}
+
+#[derive(CandidType, Deserialize)]
+pub enum FeeHistoryResult {
+    Ok(Option<FeeHistory>),
+    Err(RpcError),
+}
+
+#[derive(CandidType, Deserialize)]
+pub enum RpcService {
+    EthSepolia(EthSepoliaService),
+    Custom(RpcApi),
+    EthMainnet(EthMainnetService),
+    Chain(u64),
+    Provider(u64),
+}

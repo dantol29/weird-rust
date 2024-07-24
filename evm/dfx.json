@@ -1,0 +1,5 @@
+/* add this under canisters to pull EVM RPC canister*/
+"evm_rpc": {
+    "type": "pull",
+    "id": "7hfb6-caaaa-aaaar-qadga-cai"
+  },
