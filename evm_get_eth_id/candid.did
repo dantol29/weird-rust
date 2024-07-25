@@ -1,0 +1,3 @@
+service : {
+  ethereum_address : (owner: opt principal) -> (text);
+};
