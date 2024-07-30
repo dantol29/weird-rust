@@ -1,5 +1,4 @@
 mod wallet;
-mod state;
 mod ecdsa;
 
 use crate::wallet::EthereumWallet;

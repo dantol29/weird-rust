@@ -1,5 +1,4 @@
-use crate::ecdsa::EcdsaPublicKey;
-use crate::state::lazy_call_ecdsa_public_key;
+use crate::ecdsa::{EcdsaPublicKey, lazy_call_ecdsa_public_key};
 use candid::Principal;
 use ic_ethereum_types::Address;
 use serde_bytes::ByteBuf;

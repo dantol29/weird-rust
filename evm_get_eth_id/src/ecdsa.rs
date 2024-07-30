@@ -2,7 +2,53 @@ use ic_cdk::api::management_canister::ecdsa::EcdsaPublicKeyResponse;
 use ic_crypto_ecdsa_secp256k1::PublicKey;
 use ic_crypto_extended_bip32::{DerivationPath, ExtendedBip32DerivationResult};
 use ic_ethereum_types::Address;
+use ic_cdk::api::management_canister::ecdsa::{EcdsaKeyId, EcdsaCurve};
+use std::cell::RefCell;
 
+/* stores the ecdsa public key of the canister in a static variable
+to maintain state across different calls to the canister */
+thread_local! {
+    static STATE: RefCell<Option<EcdsaPublicKey>> = RefCell::default();
+}
+
+/* get ECDSA public key from the IC managment canister,
+ECDSA public key is used to derive the Ethereum address and is created 
+by the IC management canister for a canister(not principal) */ 
+pub async fn lazy_call_ecdsa_public_key() -> EcdsaPublicKey {
+    use ic_cdk::api::management_canister::ecdsa::{ecdsa_public_key, EcdsaPublicKeyArgument};
+
+    let key = STATE.with(|s| s.borrow().clone()); // get the public key from the state
+    if let Some(ecdsa_pk) = key {
+        return ecdsa_pk;    // return the public key if it already exists
+    }
+
+    let (response,) = ecdsa_public_key(EcdsaPublicKeyArgument { // send a request to the IC management canister to get ECDSA public key
+        canister_id: None, // // defaults to the caller
+        derivation_path: vec![],
+        key_id: EcdsaKeyId {
+            curve: EcdsaCurve::Secp256k1,
+            name: String::from("dfx_test_key"),
+        },
+    })
+    .await
+    .unwrap_or_else(|(error_code, message)| { // if the request fails, trap with an error message
+        ic_cdk::trap(&format!(
+            "failed to get canister's public key: {} (error code = {:?})",
+            message, error_code,
+        ))
+    });
+
+    let pk = EcdsaPublicKey::from(response);
+    STATE.with(|s| *s.borrow_mut() = Some(pk.clone())); // store the public key in the state
+    pk // return the public key
+}
+
+// dfx_test_key: a default key ID that is used in deploying to a local version of IC (via IC SDK).
+// test_key_1: a master test key ID that is used in mainnet.
+// key_1: a master production key ID that is used in mainnet.
+
+
+/* ECDSA public key struct that stores the public key and chain code */
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct EcdsaPublicKey {
     public_key: PublicKey,
